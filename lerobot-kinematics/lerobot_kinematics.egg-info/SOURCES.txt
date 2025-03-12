@@ -13,7 +13,7 @@ lerobot_kinematics/IK.py
 lerobot_kinematics/__init__.py
 lerobot_kinematics/p_servo.py
 lerobot_kinematics/params.py
-lerobot_kinematics/types.py
+lerobot_kinematics/typess.py
 lerobot_kinematics.egg-info/PKG-INFO
 lerobot_kinematics.egg-info/SOURCES.txt
 lerobot_kinematics.egg-info/dependency_links.txt

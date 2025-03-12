@@ -6,6 +6,7 @@ from nathan.loader import DatasetLoader
 import time
 import argparse
 import pygame
+from lerobot_kinematics import lerobot_FK, get_robot  # Import the FK function
 
 def map_action(action, source_shape=(6,), target_shape=(2,), mapping_method="simple", scale_factor=1.0):
     """
@@ -20,6 +21,7 @@ def map_action(action, source_shape=(6,), target_shape=(2,), mapping_method="sim
             - "xy_only": Take only x and y components (first two dimensions)
             - "custom": Apply a custom transformation
             - "normalized": Normalize actions to [-1, 1] range
+            - "lerobot_fk": Apply forward kinematics to joint positions
         scale_factor (float): Scale factor to apply to the actions
     
     Returns:
@@ -59,6 +61,39 @@ def map_action(action, source_shape=(6,), target_shape=(2,), mapping_method="sim
         action_subset = action[:target_shape[0]]
         max_val = max(np.abs(action_subset).max(), 1e-10)  # Avoid division by zero
         return (action_subset / max_val) * scale_factor
+    
+    elif mapping_method == "lerobot_fk":
+        # Apply forward kinematics to get end effector position
+        # Assuming action contains joint positions
+        if len(action) >= 3:  # Need at least 3 joint positions for FK
+            # Get the robot model
+            robot = get_robot()
+            
+            # Apply forward kinematics to get x, y, z
+            x, y, z = lerobot_FK(action, robot=robot)
+            
+            # Use the actual min/max values from the dataset analysis
+            x_min, x_max = -0.343701, 0.453000
+            y_min, y_max = -0.393036, 0.378866
+            
+            # Normalize x and y to [0, 1] range using the actual min/max values
+            normalized_x = (x - x_min) / (x_max - x_min)
+            normalized_y = (y - y_min) / (y_max - y_min)
+            
+            # Clip to ensure values are within [0, 1] range
+            normalized_x = np.clip(normalized_x, 0.0, 1.0)
+            normalized_y = np.clip(normalized_y, 0.0, 1.0)
+            
+            # Scale to [0, 512] range for the PushT environment
+            scaled_x = normalized_x * 512
+            scaled_y = normalized_y * 512
+            
+            xy_action = np.array([scaled_x, scaled_y])
+            
+            return xy_action * scale_factor
+        else:
+            print("Warning: Not enough joint positions for FK. Falling back to simple mapping.")
+            return action[:target_shape[0]] * scale_factor
     
     elif mapping_method == "custom":
         # Example of a custom mapping - adjust as needed for your specific dataset
@@ -167,6 +202,7 @@ def replay_episode(episode_id=0, render=True, save_video=False, dataset_name="el
                         env.close()
                         return
             
+            time.sleep(0.03)
             # Map the action to the target shape
             mapped_action = map_action(
                 action, 
@@ -247,8 +283,8 @@ def main():
     parser.add_argument('--save-video', action='store_true', help='Save a video of the replay')
     parser.add_argument('--dataset', type=str, default="ellen2imagine/pusht_green1", 
                         help='Dataset name (default: ellen2imagine/pusht_green1)')
-    parser.add_argument('--mapping', type=str, default="xy_only", 
-                        choices=["simple", "xy_only", "custom", "normalized"],
+    parser.add_argument('--mapping', type=str, default="lerobot_fk", 
+                        choices=["simple", "xy_only", "custom", "normalized", "lerobot_fk"],
                         help='Action mapping method (default: xy_only)')
     parser.add_argument('--scale', type=float, default=1.0,
                         help='Scale factor to apply to actions (default: 1.0)')
