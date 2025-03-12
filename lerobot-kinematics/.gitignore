@@ -1,0 +1,7 @@
+**.pyc
+**/__pycache__
+*.pyc
+
+examples/main_follower.json
+.vscode/settings.json
+lerobot_kinematics/lerobot/__pycache__/lerobot_Kinematics.cpython-310.pyc
