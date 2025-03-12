@@ -1,0 +1,1 @@
+`python -m nathan.mask --dataset "ellen2imagine/pusht_green1" --episode 0 --sequence --start 0 --num-frames 10 --skip 5 --output "./output/t_detection_sequence"`

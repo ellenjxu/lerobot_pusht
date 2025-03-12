@@ -14,6 +14,7 @@ import gym_pusht  # noqa: F401
         ("PushT-v0", "environment_state_agent_pos"),
     ],
 )
+
 def test_env(env_task, obs_type):
     env = gym.make(f"gym_pusht/{env_task}", obs_type=obs_type)
     check_env(env.unwrapped)
