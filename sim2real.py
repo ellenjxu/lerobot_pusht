@@ -90,9 +90,10 @@ from helper import get_dataset, forward_kinematics, inverse_kinematics, coordina
 from run_pusht import load_policy_from_checkpoint, policy_step
 
 # optional: start the env for render
-# import matplotlib.pyplot as plt
-# from diffusion_policy.env.pusht.pusht_env import PushTEnv
-# env = PushTEnv(render_size=96)
+import matplotlib.pyplot as plt
+from diffusion_policy.env.pusht.pusht_env import PushTEnv
+env = PushTEnv(render_size=96)
+env.reset()
 
 dataset = get_dataset()
 obs = []
@@ -125,6 +126,10 @@ for ts in range(inference_time_s * fps):
     x_sim, y_sim, x_T_sim, y_T_sim, theta_T_sim = coordinate_transform(x, y, x_T, y_T, theta_T)
     # pixel -> grid
     print("sim coords [0, 512]: ", x_sim, y_sim, x_T_sim, y_T_sim, theta_T_sim)
+
+    # render
+    env.set_state(x_sim, y_sim, x_T_sim, y_T_sim, theta_T_sim)
+    env.render("human")
 
     # model takes in observation context window
     obs.append((x_sim, y_sim, x_T_sim, y_T_sim, theta_T_sim))

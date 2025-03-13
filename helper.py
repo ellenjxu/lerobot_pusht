@@ -153,14 +153,17 @@ def process_image(img):
   pass
 
 # assume we have x,y,x_t,y_t,theta_t in the cartesian coord system
-# TODO: scale up the T in the sim because right now factor of 24x instead of 32x
-# but maybe it's okay if our end effector is bigger in the sim
 def coordinate_transform(x,y,x_t,y_t,theta_t):
     w,h = 512, 512
     scale = 32
-    x, y = x*scale, h - y*scale
-    x_t, y_t = x_t*scale, h - y_t*scale
-    theta_t = theta_t
+    x, y = x*scale, h-y*scale
+    x_t, y_t = x_t*scale, y_t*scale
+    theta_t = -theta_t - np.pi/2
+
+    # shift by 6 grids (since we crop the image)
+    w_sq = 25.6
+    x, x_t = x-6*w_sq, x_t-6*w_sq
+
     return x,y,x_t,y_t,theta_t
 
 if __name__ == '__main__':
