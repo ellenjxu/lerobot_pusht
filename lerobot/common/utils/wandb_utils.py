@@ -56,7 +56,7 @@ def get_safe_wandb_artifact_name(name: str):
 
 
 class WandBLogger:
-    """A helper class to log object using wandb."""
+    """A scripts.helper class to log object using wandb."""
 
     def __init__(self, cfg: TrainPipelineConfig):
         self.cfg = cfg.wandb

@@ -48,7 +48,7 @@ class AverageMeter:
 
 class MetricsTracker:
     """
-    A helper class to track and log metrics over time.
+    A scripts.helper class to track and log metrics over time.
 
     Usage pattern:
 

@@ -810,7 +810,7 @@ def update_ema_parameters(ema_net: nn.Module, net: nn.Module, alpha: float):
 
 
 def flatten_forward_unflatten(fn: Callable[[Tensor], Tensor], image_tensor: Tensor) -> Tensor:
-    """Helper to temporarily flatten extra dims at the start of the image tensor.
+    """scripts.helper to temporarily flatten extra dims at the start of the image tensor.
 
     Args:
         fn: Callable that the image tensor will be passed to. It should accept (B, C, H, W) and return

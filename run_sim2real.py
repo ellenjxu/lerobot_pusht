@@ -7,7 +7,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from lerobot.scripts.control_robot import busy_wait
 from lerobot.scripts.configure_robot import configure_robot
-from helper import *
+from scripts.helper import *
 from run_pusht import load_policy_from_checkpoint, policy_step
 # optional: start the env for render
 from diffusion_policy.env.pusht.pusht_env_live import PushTEnvLive

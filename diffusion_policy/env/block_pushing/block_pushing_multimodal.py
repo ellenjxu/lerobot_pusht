@@ -180,7 +180,7 @@ class BlockPushMultimodal(block_pushing.BlockPush):
     def _reset_block_poses(self, workspace_center_x):
         """Resets block poses."""
 
-        # Helper for choosing random block position.
+        # scripts.helper for choosing random block position.
         def _reset_block_pose(idx, add=0.0, avoid=None):
             def _get_random_translation():
                 block_x = (
@@ -663,7 +663,7 @@ class BlockPushHorizontalMultimodal(BlockPushMultimodal):
     def _reset_block_poses(self, workspace_center_y):
         """Resets block poses."""
 
-        # Helper for choosing random block position.
+        # scripts.helper for choosing random block position.
         def _reset_block_pose(idx, add=0.0, avoid=None):
             def _get_random_translation():
                 block_x = 0.35 + 0.5 * self._rng.uniform(

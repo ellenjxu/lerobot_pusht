@@ -1,10 +1,10 @@
 *.png
 *cache/
 __pycache__/
-assets/
 *.ipynb
 *.txt
 *.json
 .DS_Store
 config/
 outputs/
+models/

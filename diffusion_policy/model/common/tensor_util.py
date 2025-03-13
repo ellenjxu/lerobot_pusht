@@ -866,7 +866,7 @@ def get_shape(x):
 
 def list_of_flat_dict_to_dict_of_list(list_of_dict):
     """
-    Helper function to go from a list of flat dictionaries to a dictionary of lists.
+    scripts.helper function to go from a list of flat dictionaries to a dictionary of lists.
     By "flat" we mean that none of the values are dictionaries, but are numpy arrays,
     floats, etc.
 
@@ -903,9 +903,9 @@ def flatten_nested_dict_list(d, parent_key='', sep='_', item_key=''):
 
     Args:
         d (dict, list): a nested dict or list to be flattened
-        parent_key (str): recursion helper
+        parent_key (str): recursion scripts.helper
         sep (str): separator for nesting keys
-        item_key (str): recursion helper
+        item_key (str): recursion scripts.helper
     Returns:
         list: a list of (key, value) tuples
     """

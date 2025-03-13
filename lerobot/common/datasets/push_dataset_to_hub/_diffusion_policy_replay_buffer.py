@@ -13,7 +13,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Helper code for loading PushT dataset from Diffusion Policy (https://diffusion-policy.cs.columbia.edu/)
+"""scripts.helper code for loading PushT dataset from Diffusion Policy (https://diffusion-policy.cs.columbia.edu/)
 
 Copied from the original Diffusion Policy repository and used in our `download_and_upload_dataset.py` script.
 """

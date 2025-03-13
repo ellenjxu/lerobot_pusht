@@ -1,7 +1,7 @@
 """
 During inference, we map from real -> sim -> real
 
-Helper functions:
+scripts.helper functions:
 
 1. Image processing: image -> T (x,y,theta)
 2. Forward kinematics: 6 joint angles -> calculate (x,y) in sim

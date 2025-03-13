@@ -21,7 +21,7 @@
 # SOFTWARE.
 # ----------------------------------------------------------------------------
 
-"""This submodule contains helper functions to help with quick prototyping 
+"""This submodule contains scripts.helper functions to help with quick prototyping 
 using pymunk together with pygame.
 
 Intended to help with debugging and prototyping, not for actual production use
