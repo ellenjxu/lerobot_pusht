@@ -7,6 +7,7 @@ Helper functions:
 2. Forward kinematics: 6 joint angles -> calculate (x,y) in sim
 3. Inverse kinematics: (x,y) -> 6 joint angles
 """
+
 from datasets import load_dataset
 import pickle
 import numpy as np
@@ -15,32 +16,26 @@ import torch.nn as nn
 import torch.optim as optim
 
 def load_and_process_data(actions_path, state_path, position_path, dataset_name="ellen2imagine/koch_robot_data", data_dir='robot_cache'):
-    # Load the dataset
     dataset = load_dataset(dataset_name, data_dir=data_dir, split='train', trust_remote_code=True)
 
-    # Load actions and states from pickle files
     with open(actions_path, 'rb') as f:
         pickled_actions = pickle.load(f)
 
     with open(state_path, 'rb') as f:
         pickled_state = pickle.load(f)
 
-    # Convert actions and states to list
     pickled_actions = [action.tolist() for action in pickled_actions]
     pickled_state = [state.tolist() for state in pickled_state]
 
-    # Load the positions from position.txt
     positions = {}
     with open(position_path, 'r') as f:
         for line in f:
             idx, x, y = map(float, line.split(', '))
             positions[int(idx)] = (x, y)
 
-    # Add actions and state columns
     dataset = dataset.add_column('action', pickled_actions)
     dataset = dataset.add_column('state', pickled_state)
 
-    # Add position column with NaN for missing indices
     position_column = []
     for i in range(len(dataset)):
         if i in positions:
@@ -52,7 +47,7 @@ def load_and_process_data(actions_path, state_path, position_path, dataset_name=
 
     return dataset
 
-def get_perceptron(dataset, epochs=10_000, learning_rate=0.0001):
+def get_forward_kinematics_model(dataset, epochs=10_000, learning_rate=0.0001):
     states = np.array([item['state'] for item in dataset])
     positions = np.array([item['position'] for item in dataset])
     X_train = torch.tensor(states, dtype=torch.float32)
@@ -85,22 +80,9 @@ def get_perceptron(dataset, epochs=10_000, learning_rate=0.0001):
     return model
 
 def get_inverse_kinematics_model(dataset, epochs=100_000, learning_rate=0.0001):
-    """
-    Train a neural network model for inverse kinematics (2D position to 6D joint angles)
-    
-    Args:
-        dataset: Dataset containing 'position' and 'state' columns
-        epochs: Number of training epochs
-        learning_rate: Learning rate for optimizer
-        
-    Returns:
-        Trained PyTorch model
-    """
-    # Extract positions (2D) as input and states (6D) as output
     positions = np.array([item['position'] for item in dataset])
     states = np.array([item['state'] for item in dataset])
     
-    # Convert to PyTorch tensors
     X_train = torch.tensor(positions, dtype=torch.float32)  # 2D positions
     y_train = torch.tensor(states, dtype=torch.float32)     # 6D joint angles
     
@@ -146,7 +128,7 @@ def load_inverse_model(model_name):
     model.eval()
     return model
 
-def load_model(model_name):
+def load_forward_model(model_name):
     model = nn.Sequential(
         nn.Linear(6, 20),
         nn.ReLU(),
@@ -185,19 +167,19 @@ def interpolate_inverse(dataset, target_position, k=5):
     return np.average(nearest_states, axis=0, weights=weights)
 
 #6D to 2D
-def forward_kinematics(dataset, joints, model_name='models/kinematics/model_big.pt', use_model=True, k = 1000) -> np.array:
+def forward_kinematics(dataset, joints, model_name='kinematics/models/model_big.pt', use_model=True, k = 1000) -> np.array:
     assert isinstance(joints,np.ndarray)
     assert np.all((-360 <= joints) & (joints <= 360))
 
     assert joints.shape == (6,)
     if use_model:
-        model = load_model(model_name)
+        model = load_forward_model(model_name)
         return model(torch.tensor(joints, dtype=torch.float32)).detach().numpy()
     else:
         return interpolate(dataset, joints, k)
 
 #2D to 6D
-def inverse_kinematics(dataset, position, model_name='models/kinematics/inverse_model_big.pt', use_model=True, k=1000):    
+def inverse_kinematics(dataset, position, model_name='kinematics/models/inverse_model_big.pt', use_model=True, k=1000):    
     assert isinstance(position, np.ndarray)
     assert 0 <= position[0] <= 25
     assert 0 <= position[1] <= 16
@@ -210,9 +192,9 @@ def inverse_kinematics(dataset, position, model_name='models/kinematics/inverse_
         return interpolate_inverse(dataset, position, k)
 
 def get_dataset():
-    actions_path = 'lerobot_kinematics/data/actions.pkl'
-    state_path = 'lerobot_kinematics/data/states.pkl'
-    position_path = 'lerobot_kinematics/data/positions.txt'
+    actions_path = 'kinematics/positions_data/actions.pkl'
+    state_path = 'kinematics/positions_data/states.pkl'
+    position_path = 'kinematics/positions_data/positions.txt'
     dataset = load_and_process_data(actions_path, state_path, position_path)
     dataset = dataset.filter(lambda row: not np.isnan(row['position'][0]) and not np.isnan(row['position'][1]))
     dataset.set_format(type='numpy')
