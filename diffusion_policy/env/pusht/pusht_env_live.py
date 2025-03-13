@@ -1,5 +1,4 @@
 # same as PushTEnv but includes another dot for rendering robot state from image (digital twin)
-# (currently we render only the agent dot)
 import gym
 from gym import spaces
 
@@ -209,6 +208,18 @@ class PushTEnvLive(gym.Env):
         # Draw agent and block.
         self.space.debug_draw(draw_options)
 
+        if self.latest_action is not None:
+            action = np.array(self.latest_action)
+            action_coord = pymunk.pygame_util.to_pygame(action, canvas)
+            # draw red cross as action target
+            cross_size = 8
+            pygame.draw.line(canvas, (255,0,0), 
+                            (action_coord[0] - cross_size, action_coord[1] - cross_size),
+                            (action_coord[0] + cross_size, action_coord[1] + cross_size), 2)
+            pygame.draw.line(canvas, (255,0,0), 
+                            (action_coord[0] - cross_size, action_coord[1] + cross_size),
+                            (action_coord[0] + cross_size, action_coord[1] - cross_size), 2)
+
         if mode == "human":
             # The following line copies our drawings from `canvas` to the visible window
             self.window.blit(canvas, canvas.get_rect())
@@ -223,14 +234,15 @@ class PushTEnvLive(gym.Env):
             )
         img = cv2.resize(img, (self.render_size, self.render_size))
         if self.render_action:
-            if self.render_action and (self.latest_action is not None):
+            if self.latest_action is not None:
                 action = np.array(self.latest_action)
-                coord = (action / 512 * 96).astype(np.int32)
+                coord = (action / 512 * self.render_size).astype(np.int32)
                 marker_size = int(8/96*self.render_size)
                 thickness = int(1/96*self.render_size)
                 cv2.drawMarker(img, coord,
                     color=(255,0,0), markerType=cv2.MARKER_CROSS,
                     markerSize=marker_size, thickness=thickness)
+        
         return img
 
 

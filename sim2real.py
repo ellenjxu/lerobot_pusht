@@ -74,8 +74,6 @@ robot.connect()
 
 ##################################################################################3
 
-# modified from 02_teleop.ipynb
-
 inference_time_s = 20 # 20s for rollout
 fps = 30
 device = "cuda"
@@ -92,7 +90,7 @@ from run_pusht import load_policy_from_checkpoint, policy_step
 # optional: start the env for render
 import matplotlib.pyplot as plt
 from diffusion_policy.env.pusht.pusht_env_live import PushTEnvLive
-env = PushTEnvLive(render_size=96)
+env = PushTEnvLive(render_size=96, render_action=True)
 env.reset()
 
 dataset = get_dataset()
@@ -111,7 +109,7 @@ for ts in range(inference_time_s * fps):
     # state -> x,y
     print("state: ", state)
     state = state.cpu().numpy()
-    x, y = forward_kinematics(dataset, state)
+    x, y = forward_kinematics(dataset, state, use_model=False)
     print("forward kinematics: ", x, y)
 
     # image -> x_T, y_T, theta_T
@@ -127,7 +125,7 @@ for ts in range(inference_time_s * fps):
     # pixel -> grid
     print("sim coords [0, 512]: ", x_sim, y_sim, x_T_sim, y_T_sim, theta_T_sim)
 
-    # render the state that was computed from image
+    # render the state that was computed from image (where guy currently is)
     env.set_state(x_sim, y_sim, x_T_sim, y_T_sim, theta_T_sim)
     env.render("human")
 
@@ -136,13 +134,17 @@ for ts in range(inference_time_s * fps):
     np_obs = np.array(obs)
     if len(obs) < 2:
         np_obs = np.array([obs[0], obs[0]])
-    # else:
-    #     np_obs = np.array([obs[-2:]]) # TODO: in policy_step
-    # assert np_obs.shape == (2,5), f"np_obs.shape: {np_obs.shape}"
+    else:
+        np_obs = np_obs[-2:]
+    assert np_obs.shape == (2,5), f"np_obs.shape: {np_obs.shape}"
 
     sim_pred_xy = policy_step(np_obs, policy, device) # agent (x,y)
     sim_pred_xy = sim_pred_xy[0] # get first of action trajectory
     print("sim pred: ", sim_pred_xy)
+
+    # render the action predicted by diffusion (where guy wants to be)
+    env.latest_action = sim_pred_xy
+    env.render("human")
 
     # sim coords -> grid coords    
     pred_xy = sim2real_transform(*sim_pred_xy)
@@ -152,6 +154,7 @@ for ts in range(inference_time_s * fps):
     action = inverse_kinematics(dataset, np.array(pred_xy))
     action = torch.from_numpy(action)
     print("action: ", action)
+
     # Order the robot to move
     robot.send_action(action)
 
