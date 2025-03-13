@@ -2,7 +2,7 @@ import gymnasium as gym
 import gym_pusht
 import numpy as np
 import matplotlib.pyplot as plt
-from nathan.loader import DatasetLoader
+from scripts.loader import DatasetLoader
 import time
 import argparse
 import pygame

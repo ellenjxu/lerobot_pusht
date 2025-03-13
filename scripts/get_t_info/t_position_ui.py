@@ -15,12 +15,12 @@ ROOT_DIR = str(pathlib.Path(__file__).parent.parent.parent)
 sys.path.append(ROOT_DIR)
 
 # Import functions from mask.py
-from nathan.get_t_info.mask import (
+from scripts.get_t_info.mask import (
     extract_frame_from_video, get_t_mask, clean_mask, 
     get_t_properties, create_t_shape, calculate_overlap_score,
     visualize_t_detection, process_dataset_frame
 )
-from nathan.loader import DatasetLoader
+from scripts.loader import DatasetLoader
 
 class TPositionUI:
     def __init__(self, img, initial_mask=None, initial_props=None):

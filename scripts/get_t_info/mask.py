@@ -3,8 +3,8 @@ This script is used to detect and analyze T-shaped objects in images.
 It includes functions to create a mask for the T-shaped object, clean the mask,
 extract properties of the T-shaped object, and create a T shape model.
 
-python -m nathan.get_t_info.mask   
-python -m nathan.get_t_info.mask --sequence --no-visualize
+python -m scripts.get_t_info.mask   
+python -m scripts.get_t_info.mask --sequence --no-visualize
 """
 
 if __name__ == "__main__":
@@ -24,7 +24,7 @@ import json
 import logging
 from skimage.measure import regionprops, label
 from skimage.morphology import binary_closing, binary_opening, disk
-from nathan.loader import DatasetLoader
+from scripts.loader import DatasetLoader
 import scipy.optimize as optimize
 
 # Configure logging

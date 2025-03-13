@@ -82,7 +82,7 @@ frames = []
 log_data = []
 
 import torch
-from nathan.get_t_info.mask import get_t_position_and_orientation
+from scripts.get_t_info.mask import get_t_position_and_orientation
 from helper import *
 from run_pusht import load_policy_from_checkpoint, policy_step
 # optional: start the env for render

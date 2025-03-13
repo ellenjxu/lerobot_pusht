@@ -46,7 +46,7 @@ process_directory() {
         
         # Run T-detection on the image
         echo "Running T-detection on image..."
-        python -m nathan.get_t_info.mask \
+        python -m scripts.get_t_info.mask \
             --image "$image_file" \
             --output "$output_dir" \
             --no-visualize \
@@ -122,7 +122,7 @@ process_directory() {
         output_file="$output_dir/${video_name%.mp4}_final_result.json"
         
         echo "Extracting final frame ($last_frame) from video..."
-        python -m nathan.get_t_info.mask \
+        python -m scripts.get_t_info.mask \
             --image "$video_file" \
             --frame "$last_frame" \
             --output "$output_dir" \

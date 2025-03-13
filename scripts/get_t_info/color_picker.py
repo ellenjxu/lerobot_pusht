@@ -7,8 +7,8 @@ import click
 import cv2
 import numpy as np
 from matplotlib import pyplot as plt
-from nathan.loader import DatasetLoader
-from nathan.get_t_info.mask import extract_frame_from_video
+from scripts.loader import DatasetLoader
+from scripts.get_t_info.mask import extract_frame_from_video
 
 # Global variables to store selected color
 selected_color = None

@@ -176,7 +176,7 @@ def interpolate_inverse(dataset, target_position, k=5):
     return np.average(nearest_states, axis=0, weights=weights)
 
 #6D to 2D
-def forward_kinematics(dataset, joints, model_name='model_big.pt', use_model=True, k = 1000) -> np.array:
+def forward_kinematics(dataset, joints, model_name='models/kinematics/model_big.pt', use_model=True, k = 1000) -> np.array:
     assert isinstance(joints,np.ndarray)
     assert np.all((-360 <= joints) & (joints <= 360))
 
@@ -188,7 +188,7 @@ def forward_kinematics(dataset, joints, model_name='model_big.pt', use_model=Tru
         return interpolate(dataset, joints, k)
 
 #2D to 6D
-def inverse_kinematics(dataset, position, model_name='inverse_model_big.pt', use_model=True, k=1000):    
+def inverse_kinematics(dataset, position, model_name='models/kinematics/inverse_model_big.pt', use_model=True, k=1000):    
     assert isinstance(position, np.ndarray)
     assert 0 <= position[0] <= 25
     assert 0 <= position[1] <= 16
@@ -201,9 +201,9 @@ def inverse_kinematics(dataset, position, model_name='inverse_model_big.pt', use
         return interpolate_inverse(dataset, position, k)
 
 def get_dataset():
-    actions_path = 'actions.pkl'
-    state_path = 'states.pkl'
-    position_path = 'positions.txt'
+    actions_path = 'lerobot_kinematics/data/actions.pkl'
+    state_path = 'lerobot_kinematics/data/states.pkl'
+    position_path = 'lerobot_kinematics/data/positions.txt'
     dataset = load_and_process_data(actions_path, state_path, position_path)
     dataset = dataset.filter(lambda row: not np.isnan(row['position'][0]) and not np.isnan(row['position'][1]))
     dataset.set_format(type='numpy')

@@ -1,5 +1,7 @@
 """
-Modified from pusht_runner.py and eval.py for loading a policy and rolling out a single episode.
+Load a policy from a checkpoint and evaluate rollout in sim on the PushT environment.
+
+Modified from: pusht_runner.py and eval.py
 """
 
 import os
@@ -39,15 +41,10 @@ def load_policy_from_checkpoint(checkpoint_path, device='cuda:0'):
     return policy
 
 def policy_step(obs, policy, device, n_obs_steps=2, n_action_steps=8, n_latency_steps=0):
-    print("obs", obs)
     np_obs_dict = {
         # handle n_latency_steps by discarding the last n_latency_steps
         'obs': obs[np.newaxis, :n_obs_steps, :].astype(np.float32)  # use np.newaxis since we're not using VectorEnv
     }
-    
-    # not implemented yet
-    # if past_action is not None:
-    #     np_obs_dict['past_action'] = past_action[:, -(n_obs_steps-1):].astype(np.float32)
     
     # device transfer
     obs_dict = dict_apply(np_obs_dict, 

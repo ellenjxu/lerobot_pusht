@@ -30,9 +30,11 @@ python train.py --config-dir=. \
 
 Finally, we experiment with sim2real transfer from the learned simulation model into real Lerobot environment. The "real2sim2real" approach maps from the real world to digital twin in sim.
 
-To test a model in PushT sim: `python run_sim.py --checkpoint /path/to/checkpoint`
-To run the full sim2real pipeline: `python run_sim2real.py` (work in progress)
-To run the open-loop version of sim2real pipeline: `python run_sim2real.py` (no feedback from PushT action)
+To test a model in PushT sim: `python run_pusht.py --checkpoint /path/to/checkpoint`
+
+To run the full sim2real pipeline: `python run_pusht2real.py` (work in progress)
+
+To run the open-loop version of sim2real pipeline: `python run_pusht2real.py` (no feedback from PushT action)
 
 ## setup
 

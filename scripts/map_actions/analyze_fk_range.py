@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from nathan.loader import DatasetLoader
+from scripts.loader import DatasetLoader
 from lerobot_kinematics import lerobot_FK, get_robot
 import argparse
 from tqdm import tqdm
