@@ -1,3 +1,12 @@
+"""
+During inference, we map from real -> sim -> real
+
+Helper functions:
+
+1. Image processing: image -> T (x,y,theta)
+2. Forward kinematics: 6 joint angles -> calculate (x,y) in sim
+3. Inverse kinematics: (x,y) -> 6 joint angles
+"""
 from datasets import load_dataset
 import pickle
 import numpy as np
@@ -201,29 +210,26 @@ def inverse_kinematics(dataset, position, model_name='models/kinematics/inverse_
         return interpolate_inverse(dataset, position, k)
 
 def get_dataset():
-    actions_path = 'data/actions.pkl'
-    state_path = 'data/states.pkl'
-    position_path = 'data/positions.csv'
+    actions_path = 'lerobot_kinematics/data/actions.pkl'
+    state_path = 'lerobot_kinematics/data/states.pkl'
+    position_path = 'lerobot_kinematics/data/positions.txt'
     dataset = load_and_process_data(actions_path, state_path, position_path)
     dataset = dataset.filter(lambda row: not np.isnan(row['position'][0]) and not np.isnan(row['position'][1]))
     dataset.set_format(type='numpy')
     return dataset
 
-"""
-During inference, we map from real -> sim -> real
+#=========================================================
+from scripts.get_t_info.mask import get_t_position_and_orientation
 
-Helper functions:forw
-
-1. Image processing: image -> T (x,y,theta)
-2. Forward kinematics: 6 joint angles -> calculate (x,y) in sim
-3. Inverse kinematics: (x,y) -> 6 joint angles
-"""
-
-def process_image(img):
-  """
-  Convert image to (x,y,theta)
-  """
-  pass
+def get_position_T_from_image(img):
+    """
+    Convert image to (x,y,theta)
+    """
+    x_T, y_T, theta_T = get_t_position_and_orientation(img)
+    x_T = x_T / 25.6
+    y_T = y_T / 30
+    theta_T = theta_T * np.pi / 180 # deg -> rad
+    return x_T, y_T, theta_T
 
 # assume we have x,y,x_t,y_t,theta_t in the cartesian coord system
 def real2sim_transform(x,y,x_t,y_t,theta_t):
@@ -249,12 +255,3 @@ def sim2real_transform(x,y):
     x, y = x/scale, (h-y)/scale
 
     return x,y
-
-if __name__ == '__main__':
-    dataset = get_dataset()
-    # get_inverse_kinematics_model(dataset, epochs=20_000)
-    joint = np.array([-20,  65,    90,    60,  210,    -7])
-
-    predicted_joint = inverse_kinematics(dataset, forward_kinematics(dataset, joint, model_name='model_big.pt'), model_name='inverse_model_big.pt')
-    print(predicted_joint)
-    print(joint)
