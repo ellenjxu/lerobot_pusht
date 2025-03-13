@@ -78,7 +78,6 @@ inference_time_s = 20 # 20s for rollout
 fps = 10
 device = "cuda"
 
-s_total = time.perf_counter()
 frames = []
 log_data = []
 
@@ -131,15 +130,25 @@ initial_obs = (x_sim, y_sim, x_T_sim, y_T_sim, theta_T_sim)
 env.set_state(*initial_obs)
 # obs = np.array([initial_obs, initial_obs])
 
+s_total = time.perf_counter()
 np_obs = np.array([initial_obs, initial_obs])
+frames = []
+# action_queue = []
+
 for ts in range(inference_time_s * fps):
     start_time = time.perf_counter()
 
     action = policy_step(np_obs, policy, device)
-    # TODO: do batch of 8 actions
+    # get next action
     action = action[0]
     obs, reward, done, info = env.step(action)
-    
+
+    # # action chunking (execute 8 actions in sequence, speedup)
+    # if len(action_queue) == 0:
+    #   action = policy_step(np_obs, policy, device)
+    #   action_queue.extend(action)
+    # action = action_queue.pop(0)
+
     np_obs = np.array([obs, obs])
     # np_obs = np_obs[-2:]
 
@@ -173,6 +182,67 @@ for ts in range(inference_time_s * fps):
 
     # Order the robot to move
     robot.send_action(action)
+    log_entry = {
+        "frame": ts,
+        "frame_time": time.perf_counter() - start_time,
+        "observation_state": observation["observation.state"].cpu().numpy().tolist(),
+        "action": action.cpu().numpy().tolist()
+    }
+    log_data.append(log_entry)
+    frames.append(image)
 
     dt_s = time.perf_counter() - start_time
     busy_wait(1 / fps - dt_s)
+
+total_time = time.perf_counter() - s_total
+print(f"Total time: {total_time}s")
+
+###### EVAL ######
+
+i = "1" # which eval episode
+output_dir = "outputs/eval/diffusion_sim2real"
+
+import os
+os.makedirs(output_dir, exist_ok=True)
+import json
+import datetime
+
+log_path = f"{output_dir}/rollout_{i}.json"
+os.makedirs(os.path.dirname(log_path), exist_ok=True)
+
+log_summary = {
+    "total_time": total_time,
+    "fps": fps,
+    "intended_duration": inference_time_s,
+    "frames_count": len(frames),
+    "device": device,
+    "frames_data": log_data
+}
+
+with open(log_path, "w") as f:
+    json.dump(log_summary, f, indent=2)
+
+print(f"Saved log data to {log_path}")
+
+last_frame = frames[-1]
+
+import cv2
+import numpy as np
+
+last_frame_bgr = cv2.cvtColor(last_frame, cv2.COLOR_RGB2BGR)
+cv2.imwrite(f"{output_dir}/eval{i}.png", last_frame_bgr)
+print(f"Saved eval{i}.png")
+
+video_path = f"{output_dir}/rollout_{i}.mp4"
+height, width = frames[0].shape[1], frames[0].shape[2]
+
+fourcc = cv2.VideoWriter_fourcc(*'avc1')
+
+video_writer = cv2.VideoWriter(video_path, fourcc, fps, (width, height))
+
+for frame in frames:
+    frame_bgr = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+    video_writer.write(frame_bgr)
+
+video_writer.release()
+print(f"Saved video to {video_path}")
