@@ -1,2 +1,6 @@
 *.png
 *cache/
+__pycache__/
+models/
+assets/
+*.ipynb
