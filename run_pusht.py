@@ -38,6 +38,36 @@ def load_policy_from_checkpoint(checkpoint_path, device='cuda:0'):
     
     return policy
 
+def policy_step(obs, policy, device, n_obs_steps=2, n_action_steps=8, n_latency_steps=0):
+    np_obs_dict = {
+        # handle n_latency_steps by discarding the last n_latency_steps
+        'obs': obs[np.newaxis, :n_obs_steps, :].astype(np.float32)  # use np.newaxis since we're not using VectorEnv
+    }
+    
+    # not implemented yet
+    # if past_action is not None:
+    #     np_obs_dict['past_action'] = past_action[:, -(n_obs_steps-1):].astype(np.float32)
+    
+    # device transfer
+    obs_dict = dict_apply(np_obs_dict, 
+        lambda x: torch.from_numpy(x).to(device=device))
+    
+    # run policy
+    with torch.no_grad():
+        action_dict = policy.predict_action(obs_dict)
+    
+    # device transfer
+    np_action_dict = dict_apply(action_dict,
+        lambda x: x.detach().to('cpu').numpy())
+    
+    # handle latency_steps, we discard the first n_latency_steps actions
+    # to simulate latency
+    action = np_action_dict['action'][:,n_latency_steps:]
+        
+    action = action[0] # this is an action trajectory
+    return action
+
+
 def run_pusht_with_policy(policy, seed=0, max_steps=200, n_obs_steps=2, n_action_steps=8, n_latency_steps=0, render_mode="human", video_path=None):
     """Run the PushT environment with the given policy."""
     device = policy.device
@@ -64,34 +94,7 @@ def run_pusht_with_policy(policy, seed=0, max_steps=200, n_obs_steps=2, n_action
     
     while not done:
         # create obs dict
-        np_obs_dict = {
-            # handle n_latency_steps by discarding the last n_latency_steps
-            'obs': obs[np.newaxis, :n_obs_steps, :].astype(np.float32)  # use np.newaxis since we're not using VectorEnv
-        }
-        
-        # not implemented yet
-        # if past_action is not None:
-        #     np_obs_dict['past_action'] = past_action[:, -(n_obs_steps-1):].astype(np.float32)
-        
-        # device transfer
-        obs_dict = dict_apply(np_obs_dict, 
-            lambda x: torch.from_numpy(x).to(device=device))
-        
-        # run policy
-        with torch.no_grad():
-            action_dict = policy.predict_action(obs_dict)
-        
-        # device transfer
-        np_action_dict = dict_apply(action_dict,
-            lambda x: x.detach().to('cpu').numpy())
-        
-        # handle latency_steps, we discard the first n_latency_steps actions
-        # to simulate latency
-        action = np_action_dict['action'][:,n_latency_steps:]
-        
-        # print(action.shape)
-        action = action[0]
-        
+        action = policy_step(obs, policy, device)
         # step env
         obs, reward, done, info = env.step(action)
         total_reward += reward
