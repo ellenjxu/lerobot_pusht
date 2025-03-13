@@ -6,7 +6,7 @@ There are two main components of the code:
 
 > Real (`lerobot/`) <-> sim (`diffusion_policy/`)
 
-For the lerobot, the scripts for calibration, control, data collection are in `lerobot/scripts/pusht`. Data is collected and uploaded to HuggingFace. Then train an imitation learning policy in real using `lerobot/scripts/train.py`:
+For the lerobot, the scripts for calibration, control, data collection are in `lerobot/scripts/`. Data is collected and uploaded to HuggingFace. Then train an imitation learning policy in real using `lerobot/scripts/train.py`:
 
 ```
 python lerobot/scripts/train.py \

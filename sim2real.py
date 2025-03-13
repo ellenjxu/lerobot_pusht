@@ -86,13 +86,13 @@ log_data = []
 
 import torch
 from nathan.get_t_info.mask import get_t_position_and_orientation
-from helper import get_dataset, forward_kinematics, inverse_kinematics, coordinate_transform
+from helper import *
 from run_pusht import load_policy_from_checkpoint, policy_step
 
 # optional: start the env for render
 import matplotlib.pyplot as plt
-from diffusion_policy.env.pusht.pusht_env import PushTEnv
-env = PushTEnv(render_size=96)
+from diffusion_policy.env.pusht.pusht_env_live import PushTEnvLive
+env = PushTEnvLive(render_size=96)
 env.reset()
 
 dataset = get_dataset()
@@ -123,11 +123,11 @@ for ts in range(inference_time_s * fps):
     theta_T = theta_T * np.pi / 180 # deg -> rad
     print("overlayed grid cartesian coords [0, 16]: ", x, y, x_T, y_T, theta_T)
     # grid coords -> sim coords
-    x_sim, y_sim, x_T_sim, y_T_sim, theta_T_sim = coordinate_transform(x, y, x_T, y_T, theta_T)
+    x_sim, y_sim, x_T_sim, y_T_sim, theta_T_sim = real2sim_transform(x, y, x_T, y_T, theta_T)
     # pixel -> grid
     print("sim coords [0, 512]: ", x_sim, y_sim, x_T_sim, y_T_sim, theta_T_sim)
 
-    # render
+    # render the state that was computed from image
     env.set_state(x_sim, y_sim, x_T_sim, y_T_sim, theta_T_sim)
     env.render("human")
 
@@ -140,48 +140,20 @@ for ts in range(inference_time_s * fps):
     #     np_obs = np.array([obs[-2:]]) # TODO: in policy_step
     # assert np_obs.shape == (2,5), f"np_obs.shape: {np_obs.shape}"
 
-    sim_action = policy_step(np_obs, policy, device)
-    sim_action = sim_action[0] # get first of action trajectory
-    print("sim action: ", sim_action)
+    sim_pred_xy = policy_step(np_obs, policy, device) # agent (x,y)
+    sim_pred_xy = sim_pred_xy[0] # get first of action trajectory
+    print("sim pred: ", sim_pred_xy)
+
+    # sim coords -> grid coords    
+    pred_xy = sim2real_transform(*sim_pred_xy)
+    print("overlayed grid action: ", pred_xy)
 
     # x,y -> action
-    action = inverse_kinematics(dataset, sim_action)
+    action = inverse_kinematics(dataset, np.array(pred_xy))
     action = torch.from_numpy(action)
     print("action: ", action)
     # Order the robot to move
     robot.send_action(action)
-
-    # Convert to pytorch format: channel first and float32 in [0,1]
-    # with batch dimension
-    # for name in observation:
-    #     if "image" in name:
-    #         observation[name] = observation[name].type(torch.float32) / 255
-    #         observation[name] = observation[name].permute(2, 0, 1).contiguous()
-    #         frames.append(observation[name])
-    #     observation[name] = observation[name].unsqueeze(0)
-    #     observation[name] = observation[name].to(device)
-
-    # # Compute the next action with the policy
-    # # based on the current observation
-    # s_time = time.perf_counter()
-    # action = policy.select_action(observation)
-    # e_time = time.perf_counter()
-    # frame_time = e_time - s_time
-    # print(f"Time taken: {e_time - s_time} seconds")
-    # # Remove batch dimension
-    # action = action.squeeze(0)
-    # # Move to cpu, if not already the case
-    # action = action.to("cpu")
-    # # Order the robot to move
-    # robot.send_action(action)
-
-    # log_entry = {
-    #     "frame": ts,
-    #     "frame_time": frame_time,
-    #     "observation_state": observation["observation.state"].cpu().numpy().tolist(),
-    #     "action": action.cpu().numpy().tolist()
-    # }
-    # log_data.append(log_entry)
 
     dt_s = time.perf_counter() - start_time
     busy_wait(1 / fps - dt_s)
