@@ -201,9 +201,9 @@ def inverse_kinematics(dataset, position, model_name='models/kinematics/inverse_
         return interpolate_inverse(dataset, position, k)
 
 def get_dataset():
-    actions_path = 'lerobot_kinematics/data/actions.pkl'
-    state_path = 'lerobot_kinematics/data/states.pkl'
-    position_path = 'lerobot_kinematics/data/positions.txt'
+    actions_path = 'data/actions.pkl'
+    state_path = 'data/states.pkl'
+    position_path = 'data/positions.csv'
     dataset = load_and_process_data(actions_path, state_path, position_path)
     dataset = dataset.filter(lambda row: not np.isnan(row['position'][0]) and not np.isnan(row['position'][1]))
     dataset.set_format(type='numpy')
