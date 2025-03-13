@@ -152,19 +152,7 @@ def process_image(img):
   """
   pass
 
-def forward_kinematics():
-  """
-  Calculate (x,y) in sim from 6 joint angles
-  """
-  pass
-
-def inverse_kinematics():
-  """
-  Calculate 6 joint angles from (x,y) in sim
-  """
-  pass
-
-# assuem we have x,y,x_t,y_t,theta_t in the cartesian coord system
+# assume we have x,y,x_t,y_t,theta_t in the cartesian coord system
 # TODO: scale up the T in the sim because right now factor of 24x instead of 32x
 # but maybe it's okay if our end effector is bigger in the sim
 def real2sim_transform(x,y,x_t,y_t,theta_t):
@@ -174,3 +162,13 @@ def real2sim_transform(x,y,x_t,y_t,theta_t):
     x_t, y_t = x_t*scale, h - y_t*scale
     theta_t = theta_t
     return x,y,x_t,y_t,theta_t
+
+if __name__ == '__main__':
+    dataset = get_dataset()
+    joint = np.array([92.021, 66.18, 94.30, 51.68, 163.03, -7.119])
+    predicted_xy = forward_kinematics(dataset, joint)
+    print(predicted_xy)
+
+    xy = np.array([13, 8])
+    predicted_joint = inverse_kinematics(dataset, xy)
+    print(predicted_joint)
