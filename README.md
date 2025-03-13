@@ -18,7 +18,7 @@ python lerobot/scripts/train.py \
   --wandb.enable=true
 ```
 
-For the sim component, we add an additional vanilla PushT task (`PushTEnv`) to the diffusion policy repo. The vanilla Push T takes in 5 observations `(x,y,x_T,y_T,theta_T)` instead of 9 for the keypoint. We train a diffusion policy in sim:
+For the sim component, we add an additional vanilla PushT task (`PushTEnv`) to the diffusion policy repo. The vanilla Push T takes in 5 observations `(x,y,x_T,y_T,theta_T)` instead of 9 for the keypoint. To train a diffusion policy in sim:
 
 ```
 python train.py --config-dir=. \
@@ -28,4 +28,15 @@ python train.py --config-dir=. \
   hydra.run.dir='data/outputs/${now:%Y.%m.%d}/${now:%H.%M.%S}*${name}_${task_name}'
 ```
 
-Finally, we experiment with sim2real with transferring the learned model into real Lerobot environment.
+Finally, we experiment with sim2real transfer from the learned simulation model into real Lerobot environment. The "real2sim2real" approach maps from the real world to digital twin in sim.
+
+To test a model in PushT sim: `python run_sim.py --checkpoint /path/to/checkpoint`
+To run the full sim2real pipeline: `python run_sim2real.py` (work in progress)
+To run the open-loop version of sim2real pipeline: `python run_sim2real.py` (no feedback from PushT action)
+
+## setup
+
+To install the required dependencies, run:
+`pip install -e .`
+
+and `conda env update --file environment.yaml`
