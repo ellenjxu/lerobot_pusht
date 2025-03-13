@@ -224,18 +224,29 @@ def process_image(img):
   pass
 
 # assume we have x,y,x_t,y_t,theta_t in the cartesian coord system
-def coordinate_transform(x,y,x_t,y_t,theta_t):
+def real2sim_transform(x,y,x_t,y_t,theta_t):
     w,h = 512, 512
     scale = 32
     x, y = x*scale, h-y*scale
     x_t, y_t = x_t*scale, y_t*scale
-    theta_t = -theta_t - np.pi/2
+    theta_t = -theta_t - np.pi/2 # same as theta_t+np.pi/2?
 
     # shift by 6 grids (since we crop the image)
     w_sq = 25.6
     x, x_t = x-6*w_sq, x_t-6*w_sq
 
     return x,y,x_t,y_t,theta_t
+
+# only need to map agent x,y back
+def sim2real_transform(x,y):
+    w_sq = 25.6
+    x = x+6*w_sq
+
+    w,h = 512, 512
+    scale = 32
+    x, y = x/scale, (h-y)/scale
+
+    return x,y
 
 if __name__ == '__main__':
     dataset = get_dataset()
