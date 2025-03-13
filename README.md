@@ -1,10 +1,27 @@
 # lerobot_pusht
 
-Train a diffusion policy in sim, then transfer to real, using the Push T task.
+Train a diffusion policy in sim, then transfer to real, to solve the Push T task!
+
+![digitaltwin](https://github.com/user-attachments/assets/2d6d1b8f-ed30-4238-bbf7-f5f62a5350d9)
+
+## setup
+
+Hardware setup using the [Koch v1.1 arm](https://github.com/jess-moss/koch-v1-1?tab=readme-ov-file).
+
+<img src="https://github.com/user-attachments/assets/4b5d3651-4f4e-483f-a20d-24ec2b7c36ad" width="400" alt="lerobot_setup">
+
+To install the required dependencies, run:
+`pip install -e .`
+and `conda env update --file environment.yaml`
+
+## usage
 
 There are two main components of the code:
 
 > Real (`lerobot/`) <-> sim (`diffusion_policy/`)
+>
+> ![image](https://github.com/user-attachments/assets/9e41a651-6636-4b41-ae7f-a4afec941a0b)
+
 
 For the lerobot, the scripts for calibration, control, data collection are in `lerobot/scripts/`. Data is collected and uploaded to HuggingFace. Then train an imitation learning policy in real using `lerobot/scripts/train.py`:
 
@@ -30,15 +47,22 @@ python train.py --config-dir=. \
 
 Finally, we experiment with sim2real transfer from the learned simulation model into real Lerobot environment. The "real2sim2real" approach maps from the real world to digital twin in sim.
 
-To test a model in PushT sim: `python run_pusht.py --checkpoint /path/to/checkpoint`
+1. To test a model in PushT sim: `python run_pusht.py --checkpoint /path/to/checkpoint`
 
-To run the full sim2real pipeline: `python run_pusht2real.py` (work in progress)
+2. To run the full sim2real pipeline: `python run_pusht2real.py` (work in progress)
 
-To run the open-loop version of sim2real pipeline: `python run_pusht2real.py` (no feedback from PushT action)
+3. To run the open-loop version of sim2real pipeline: `python run_pusht2real.py` (no feedback from PushT action
 
-## setup
+## results
 
-To install the required dependencies, run:
-`pip install -e .`
+rollout of diffusion policy sim2real:
 
-and `conda env update --file environment.yaml`
+https://github.com/user-attachments/assets/644d7880-7b31-49aa-93ba-59f170319a88
+
+https://github.com/user-attachments/assets/97dde5f1-1ea9-409b-90d2-aface850fd32
+
+## acknowledgements
+
+- Hardware from [Koch v1.1](https://github.com/jess-moss/koch-v1-1?tab=readme-ov-file)
+- [Diffusion Policy](https://github.com/real-stanford/diffusion_policy/tree/main)
+- [Lerobot](https://github.com/huggingface/lerobot)
