@@ -202,7 +202,7 @@ def replay_episode(episode_id=0, render=True, save_video=False, dataset_name="el
                         env.close()
                         return
             
-            time.sleep(0.03)
+            time.sleep(0.1)
             # Map the action to the target shape
             mapped_action = map_action(
                 action, 
