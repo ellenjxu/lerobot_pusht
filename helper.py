@@ -176,7 +176,7 @@ def interpolate_inverse(dataset, target_position, k=5):
     return np.average(nearest_states, axis=0, weights=weights)
 
 #6D to 2D
-def forward_kinematics(dataset, joints, model_name, use_model=True, k = 1000) -> np.array:
+def forward_kinematics(dataset, joints, model_name='model_big.pt', use_model=True, k = 1000) -> np.array:
     assert isinstance(joints,np.ndarray)
     assert np.all((-360 <= joints) & (joints <= 360))
 
@@ -188,7 +188,7 @@ def forward_kinematics(dataset, joints, model_name, use_model=True, k = 1000) ->
         return interpolate(dataset, joints, k)
 
 #2D to 6D
-def inverse_kinematics(dataset, position, model_name, use_model=True, k=1000):    
+def inverse_kinematics(dataset, position, model_name='inverse_model_big.pt', use_model=True, k=1000):    
     assert isinstance(position, np.ndarray)
     assert 0 <= position[0] <= 25
     assert 0 <= position[1] <= 16
