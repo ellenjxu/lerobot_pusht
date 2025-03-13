@@ -105,6 +105,9 @@ class PushTEnv(gym.Env):
 
         observation = self._get_obs()
         return observation
+    
+    def set_state(self, x,y,x_t,y_t,theta_t):
+        self._set_state(np.array([x,y,x_t,y_t,theta_t]))
 
     def step(self, action):
         dt = 1.0 / self.sim_hz

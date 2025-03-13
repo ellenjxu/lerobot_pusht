@@ -8,3 +8,4 @@ assets/
 *.json
 .DS_Store
 config/
+outputs/
