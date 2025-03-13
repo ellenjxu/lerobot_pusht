@@ -43,11 +43,6 @@ def load_and_process_data(actions_path, state_path, position_path, dataset_name=
 
     return dataset
 
-# Example usage
-actions_path = 'actions.pkl'
-state_path = 'states.pkl'
-position_path = 'positions.txt'
-
 def get_perceptron(dataset, epochs=10_000, learning_rate=0.0001):
     states = np.array([item['state'] for item in dataset])
     positions = np.array([item['position'] for item in dataset])
@@ -78,6 +73,68 @@ def get_perceptron(dataset, epochs=10_000, learning_rate=0.0001):
     torch.save(model.state_dict(), 'model.pt')
     return model
 
+def get_inverse_kinematics_model(dataset, epochs=10_000, learning_rate=0.0001):
+    """
+    Train a neural network model for inverse kinematics (2D position to 6D joint angles)
+    
+    Args:
+        dataset: Dataset containing 'position' and 'state' columns
+        epochs: Number of training epochs
+        learning_rate: Learning rate for optimizer
+        
+    Returns:
+        Trained PyTorch model
+    """
+    # Extract positions (2D) as input and states (6D) as output
+    positions = np.array([item['position'] for item in dataset])
+    states = np.array([item['state'] for item in dataset])
+    
+    # Convert to PyTorch tensors
+    X_train = torch.tensor(positions, dtype=torch.float32)  # 2D positions
+    y_train = torch.tensor(states, dtype=torch.float32)     # 6D joint angles
+    
+    model = nn.Sequential(
+        nn.Linear(X_train.shape[1], 20),  # Input: 2D position
+        nn.ReLU(),
+        nn.Linear(20, 20),
+        nn.ReLU(),
+        nn.Linear(20, 20),   
+        nn.ReLU(),
+        nn.Linear(20, y_train.shape[1])  # Output: 6D joint angles
+    )
+    
+    criterion = nn.MSELoss()
+    optimizer = optim.Adam(model.parameters(), lr=learning_rate, weight_decay=0.01)
+
+    for epoch in range(epochs):
+        outputs = model(X_train)
+        loss = criterion(outputs, y_train)
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+        
+        if (epoch + 1) % 1000 == 0:
+            print(f"Epoch {epoch + 1}/{epochs}, Loss: {loss.item():.4f}")
+    
+    print(f"Final loss: {loss.item():.4f}")
+    torch.save(model.state_dict(), 'inverse_model.pt')
+    return model
+
+
+def load_inverse_model():
+    model = nn.Sequential(
+        nn.Linear(2, 20),    # Input: 2D position
+        nn.ReLU(),
+        nn.Linear(20, 20),
+        nn.ReLU(),
+        nn.Linear(20, 20),   
+        nn.ReLU(),
+        nn.Linear(20, 6)     # Output: 6D joint angles
+    )
+    model.load_state_dict(torch.load('inverse_model.pt'))
+    model.eval()
+    return model
+
 def load_model():
     model = nn.Sequential(
             nn.Linear(6, 20),
@@ -91,6 +148,8 @@ def load_model():
     model.load_state_dict(torch.load('model.pt'))
     model.eval()
     return model
+
+
 
 def interpolate(dataset, target_state, k=1):
     states = dataset['state']
@@ -117,6 +176,8 @@ def interpolate_inverse(dataset, target_position, k=5):
 #6D to 2D
 def forward_kinematics(dataset, joints, use_model=True, k = 1000) -> np.array:
     assert isinstance(joints,np.ndarray)
+    assert np.all((-360 <= joints) & (joints <= 360))
+
     assert joints.shape == (6,)
     if use_model:
         model = load_model()
@@ -125,12 +186,22 @@ def forward_kinematics(dataset, joints, use_model=True, k = 1000) -> np.array:
         return interpolate(dataset, joints, k)
 
 #2D to 6D
-def inverse_kinematics(dataset, point, k=1000):
-    assert isinstance(point, np.ndarray)
-    assert point.shape == (2,)
-    return interpolate_inverse(dataset, point, k)
+def inverse_kinematics(dataset, position, use_model=True, k=1000):    
+    assert isinstance(position, np.ndarray)
+    assert 0 <= position[0] <= 25
+    assert 0 <= position[1] <= 16
+    assert position.shape == (2,)
+    
+    if use_model:
+        model = load_inverse_model()
+        return model(torch.tensor(position, dtype=torch.float32)).detach().numpy()
+    else:
+        return interpolate_inverse(dataset, position, k)
 
 def get_dataset():
+    actions_path = 'actions.pkl'
+    state_path = 'states.pkl'
+    position_path = 'positions.txt'
     dataset = load_and_process_data(actions_path, state_path, position_path)
     dataset = dataset.filter(lambda row: not np.isnan(row['position'][0]) and not np.isnan(row['position'][1]))
     dataset.set_format(type='numpy')
@@ -165,10 +236,12 @@ def real2sim_transform(x,y,x_t,y_t,theta_t):
 
 if __name__ == '__main__':
     dataset = get_dataset()
-    joint = np.array([92.021, 66.18, 94.30, 51.68, 163.03, -7.119])
-    predicted_xy = forward_kinematics(dataset, joint)
-    print(predicted_xy)
+    print(dataset['state'].min(axis=0))
+    joint = np.array([-11.8359375,  63.57639,    88.27474,    59.106987,  207.38824,    -7.120226 ])
+    for i in np.linspace(-100, 100, num=20):
+        joint[0] = i
+        print(forward_kinematics(dataset, joint))
 
-    xy = np.array([13, 8])
+    xy = np.array([10.1, 10.1])
     predicted_joint = inverse_kinematics(dataset, xy)
     print(predicted_joint)
