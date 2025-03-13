@@ -73,7 +73,7 @@ def get_perceptron(dataset, epochs=10_000, learning_rate=0.0001):
     torch.save(model.state_dict(), 'model.pt')
     return model
 
-def get_inverse_kinematics_model(dataset, epochs=10_000, learning_rate=0.0001):
+def get_inverse_kinematics_model(dataset, epochs=50_000, learning_rate=0.0001):
     """
     Train a neural network model for inverse kinematics (2D position to 6D joint angles)
     
@@ -96,11 +96,11 @@ def get_inverse_kinematics_model(dataset, epochs=10_000, learning_rate=0.0001):
     model = nn.Sequential(
         nn.Linear(X_train.shape[1], 20),  # Input: 2D position
         nn.ReLU(),
-        nn.Linear(20, 20),
+        nn.Linear(20, 100),
         nn.ReLU(),
-        nn.Linear(20, 20),   
+        nn.Linear(100, 200),   
         nn.ReLU(),
-        nn.Linear(20, y_train.shape[1])  # Output: 6D joint angles
+        nn.Linear(200, y_train.shape[1])  # Output: 6D joint angles
     )
     
     criterion = nn.MSELoss()
@@ -117,21 +117,21 @@ def get_inverse_kinematics_model(dataset, epochs=10_000, learning_rate=0.0001):
             print(f"Epoch {epoch + 1}/{epochs}, Loss: {loss.item():.4f}")
     
     print(f"Final loss: {loss.item():.4f}")
-    torch.save(model.state_dict(), 'inverse_model.pt')
+    torch.save(model.state_dict(), 'inverse_model_big.pt')
     return model
 
 
-def load_inverse_model():
+def load_inverse_model(model_name):
     model = nn.Sequential(
         nn.Linear(2, 20),    # Input: 2D position
         nn.ReLU(),
-        nn.Linear(20, 20),
+        nn.Linear(20, 100),
         nn.ReLU(),
-        nn.Linear(20, 20),   
+        nn.Linear(100, 200),   
         nn.ReLU(),
-        nn.Linear(20, 6)     # Output: 6D joint angles
+        nn.Linear(200, 6)     # Output: 6D joint angles
     )
-    model.load_state_dict(torch.load('inverse_model.pt'))
+    model.load_state_dict(torch.load(model_name))
     model.eval()
     return model
 
@@ -186,14 +186,14 @@ def forward_kinematics(dataset, joints, use_model=True, k = 1000) -> np.array:
         return interpolate(dataset, joints, k)
 
 #2D to 6D
-def inverse_kinematics(dataset, position, use_model=True, k=1000):    
+def inverse_kinematics(dataset, position, model_name, use_model=True, k=1000):    
     assert isinstance(position, np.ndarray)
     assert 0 <= position[0] <= 25
     assert 0 <= position[1] <= 16
     assert position.shape == (2,)
     
     if use_model:
-        model = load_inverse_model()
+        model = load_inverse_model(model_name)
         return model(torch.tensor(position, dtype=torch.float32)).detach().numpy()
     else:
         return interpolate_inverse(dataset, position, k)
@@ -239,12 +239,9 @@ def coordinate_transform(x,y,x_t,y_t,theta_t):
 
 if __name__ == '__main__':
     dataset = get_dataset()
-    print(dataset['state'].min(axis=0))
-    joint = np.array([-11.8359375,  63.57639,    88.27474,    59.106987,  207.38824,    -7.120226 ])
-    for i in np.linspace(-100, 100, num=20):
-        joint[0] = i
-        print(forward_kinematics(dataset, joint))
+    # get_inverse_kinematics_model(dataset, model_name = 'inverse_model_big.pt', epochs=20_000)
+    joint = np.array([-20,  65,    90,    60,  210,    -10])
 
-    xy = np.array([10.1, 10.1])
-    predicted_joint = inverse_kinematics(dataset, xy)
+    predicted_joint = inverse_kinematics(dataset, forward_kinematics(dataset, joint), model_name='inverse_model_big.pt')
     print(predicted_joint)
+    print(joint)
