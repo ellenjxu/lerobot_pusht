@@ -39,6 +39,7 @@ def load_policy_from_checkpoint(checkpoint_path, device='cuda:0'):
     return policy
 
 def policy_step(obs, policy, device, n_obs_steps=2, n_action_steps=8, n_latency_steps=0):
+    print("obs", obs)
     np_obs_dict = {
         # handle n_latency_steps by discarding the last n_latency_steps
         'obs': obs[np.newaxis, :n_obs_steps, :].astype(np.float32)  # use np.newaxis since we're not using VectorEnv
@@ -64,7 +65,7 @@ def policy_step(obs, policy, device, n_obs_steps=2, n_action_steps=8, n_latency_
     # to simulate latency
     action = np_action_dict['action'][:,n_latency_steps:]
         
-    action = action[0] # this is an action trajectory
+    action = action[0] # n_action_steps length
     return action
 
 
