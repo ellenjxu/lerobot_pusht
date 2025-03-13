@@ -43,7 +43,7 @@ def load_and_process_data(actions_path, state_path, position_path, dataset_name=
 
     return dataset
 
-def get_perceptron(dataset, epochs=20_000, learning_rate=0.0001):
+def get_perceptron(dataset, epochs=10_000, learning_rate=0.0001):
     states = np.array([item['state'] for item in dataset])
     positions = np.array([item['position'] for item in dataset])
     X_train = torch.tensor(states, dtype=torch.float32)
@@ -52,9 +52,9 @@ def get_perceptron(dataset, epochs=20_000, learning_rate=0.0001):
     model = nn.Sequential(
             nn.Linear(X_train.shape[1], 20),
             nn.ReLU(),
-            nn.Linear(20, 20),
+            nn.Linear(20, 100),
             nn.ReLU(),
-            nn.Linear(20, 20),   
+            nn.Linear(100, 20),   
             nn.ReLU(),
             nn.Linear(20, y_train.shape[1]),   
         )
@@ -68,69 +68,86 @@ def get_perceptron(dataset, epochs=20_000, learning_rate=0.0001):
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
-
+        if (_ + 1) % 1000 == 0:
+            print(f"Epoch {_ + 1}/{epochs}, Loss: {loss.item():.4f}")
+    
     print(loss)
-    torch.save(model.state_dict(), 'model.pt')
+    torch.save(model.state_dict(), 'model_big.pt')
     return model
 
-def get_inverse_kinematics_model(dataset, model_name, epochs=10000, learning_rate=0.0001):
+def get_inverse_kinematics_model(dataset, epochs=100_000, learning_rate=0.0001):
+    """
+    Train a neural network model for inverse kinematics (2D position to 6D joint angles)
+    
+    Args:
+        dataset: Dataset containing 'position' and 'state' columns
+        epochs: Number of training epochs
+        learning_rate: Learning rate for optimizer
+        
+    Returns:
+        Trained PyTorch model
+    """
+    # Extract positions (2D) as input and states (6D) as output
     positions = np.array([item['position'] for item in dataset])
     states = np.array([item['state'] for item in dataset])
-    X_train = torch.tensor(positions, dtype=torch.float32)
-    y_train = torch.tensor(states, dtype=torch.float32)
+    
+    # Convert to PyTorch tensors
+    X_train = torch.tensor(positions, dtype=torch.float32)  # 2D positions
+    y_train = torch.tensor(states, dtype=torch.float32)     # 6D joint angles
     
     model = nn.Sequential(
-        nn.Linear(2, 32),
+        nn.Linear(X_train.shape[1], 20),  # Input: 2D position
         nn.ReLU(),
-        nn.Dropout(0.2),
-        nn.Linear(32, 64),
+        nn.Linear(20, 100),
         nn.ReLU(),
-        nn.Dropout(0.2),
-        nn.Linear(64, 6)
+        nn.Linear(100, 200),   
+        nn.ReLU(),
+        nn.Linear(200, y_train.shape[1])  # Output: 6D joint angles
     )
     
     criterion = nn.MSELoss()
-    optimizer = optim.Adam(model.parameters(), lr=learning_rate, weight_decay=0.001)
-    
+    optimizer = optim.Adam(model.parameters(), lr=learning_rate, weight_decay=0.01)
+
     for epoch in range(epochs):
         outputs = model(X_train)
         loss = criterion(outputs, y_train)
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
+        
         if (epoch + 1) % 1000 == 0:
             print(f"Epoch {epoch + 1}/{epochs}, Loss: {loss.item():.4f}")
     
     print(f"Final loss: {loss.item():.4f}")
-    torch.save(model.state_dict(), model_name)
+    torch.save(model.state_dict(), 'inverse_model_big.pt')
     return model
 
 
 def load_inverse_model(model_name):
     model = nn.Sequential(
-        nn.Linear(2, 32),
+        nn.Linear(2, 20),    # Input: 2D position
         nn.ReLU(),
-        nn.Dropout(0.2),
-        nn.Linear(32, 64),
+        nn.Linear(20, 100),
         nn.ReLU(),
-        nn.Dropout(0.2),
-        nn.Linear(64, 6)
+        nn.Linear(100, 200),   
+        nn.ReLU(),
+        nn.Linear(200, 6)     # Output: 6D joint angles
     )
     model.load_state_dict(torch.load(model_name))
     model.eval()
     return model
 
-def load_model():
+def load_model(model_name):
     model = nn.Sequential(
-            nn.Linear(6, 20),
-            nn.ReLU(),
-            nn.Linear(20, 20),
-            nn.ReLU(),
-            nn.Linear(20, 20),   
-            nn.ReLU(),
-            nn.Linear(20, 2),   
-        )
-    model.load_state_dict(torch.load('model.pt'))
+        nn.Linear(6, 20),
+        nn.ReLU(),
+        nn.Linear(20, 100),
+        nn.ReLU(),
+        nn.Linear(100, 20),   
+        nn.ReLU(),
+        nn.Linear(20, 2),   
+    )
+    model.load_state_dict(torch.load(model_name))
     model.eval()
     return model
 
@@ -159,13 +176,13 @@ def interpolate_inverse(dataset, target_position, k=5):
     return np.average(nearest_states, axis=0, weights=weights)
 
 #6D to 2D
-def forward_kinematics(dataset, joints, use_model=True, k = 1000) -> np.array:
+def forward_kinematics(dataset, joints, model_name, use_model=True, k = 1000) -> np.array:
     assert isinstance(joints,np.ndarray)
     assert np.all((-360 <= joints) & (joints <= 360))
 
     assert joints.shape == (6,)
     if use_model:
-        model = load_model()
+        model = load_model(model_name)
         return model(torch.tensor(joints, dtype=torch.float32)).detach().numpy()
     else:
         return interpolate(dataset, joints, k)
@@ -195,7 +212,7 @@ def get_dataset():
 """
 During inference, we map from real -> sim -> real
 
-Helper functions:
+Helper functions:forw
 
 1. Image processing: image -> T (x,y,theta)
 2. Forward kinematics: 6 joint angles -> calculate (x,y) in sim
@@ -235,9 +252,9 @@ def sim2real_transform(x,y):
 
 if __name__ == '__main__':
     dataset = get_dataset()
-    get_inverse_kinematics_model(dataset, model_name = 'inverse_model_cool.pt', epochs=50_000)
-    joint = np.array([-20,  65,    90,    60,  210,    -10])
+    # get_inverse_kinematics_model(dataset, epochs=20_000)
+    joint = np.array([-20,  65,    90,    60,  210,    -7])
 
-    predicted_joint = inverse_kinematics(dataset, forward_kinematics(dataset, joint), model_name='inverse_model_cool.pt')
+    predicted_joint = inverse_kinematics(dataset, forward_kinematics(dataset, joint, model_name='model_big.pt'), model_name='inverse_model_big.pt')
     print(predicted_joint)
     print(joint)
