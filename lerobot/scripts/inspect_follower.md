@@ -1,7 +1,9 @@
-# Read-only Koch follower inspection
+# Read-only Koch arm inspection
 
 This is the discovery/observation stage of a follower control tool. It reuses this
-checkout's LeRobot motor-bus connection and camera classes. It does not instantiate
+checkout's LeRobot motor-bus connection and camera classes. The optional
+`--role leader` mode supports explicitly requested leader observations with the
+same read-only transport boundary. It does not instantiate
 `ManipulatorRobot`, calibrate, home, enable torque, change motor settings, or offer
 motion/hold/disarm commands. Keep other robot-control programs stopped during
 inspection. The process lock coordinates instances of this tool; it cannot exclude
@@ -21,6 +23,10 @@ PYTHONPATH=. python -m lerobot.scripts.inspect_follower \
   --output /absolute/path/frame.json
 PYTHONPATH=. python -m pytest -q tests/test_inspect_follower.py
 ```
+
+Use `--role leader` only after the operator has identified and authorized reading
+that USB-connected arm. It expects six XL330-M077 (model 1190) servos; their current,
+voltage and position units match the XL330-M288 column below.
 
 Use a new output filename for each invocation. The tool refuses to overwrite
 existing evidence. Identify the follower's USB serial with the local operator
@@ -65,7 +71,8 @@ which is not a joint torque sensor or direct phase-current measurement. No Nm
 conversion is made. A torque-enable flag is never an effort measurement.
 
 Sources: [XL430 control table](https://emanual.robotis.com/docs/en/dxl/x/xl430-w250/)
-and [XL330 control table](https://emanual.robotis.com/docs/en/dxl/x/xl330-m288/).
+[XL330-M288 control table](https://emanual.robotis.com/docs/en/dxl/x/xl330-m288/),
+and [XL330-M077 control table](https://emanual.robotis.com/docs/en/dxl/x/xl330-m077/).
 
 Important startup details for the eventual controller: zero profile velocity or
 acceleration can mean unlimited profiles; EEPROM min/max position limits are not

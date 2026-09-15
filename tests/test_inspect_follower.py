@@ -142,3 +142,23 @@ def test_camera_capture_releases_after_failed_read(monkeypatch, tmp_path):
     with pytest.raises(OSError):
         capture_frame(0, tmp_path / "frame.png")
     camera.disconnect.assert_called_once()
+
+
+def test_explicit_leader_role_identifies_all_six_m077_without_motion():
+    h = FakeHandler()
+    h.ping = lambda port, motor_id: (1190, 0, 0)
+    result = observe(h, None, role="leader")
+    assert result["declared_role"] == "leader"
+    assert all(m["matches_koch_config"] for m in result["motors"])
+    assert all(m["model"] == "xl330-m077" for m in result["motors"])
+    assert all(m["fields"]["present_current"]["raw"] == -1 for m in result["motors"])
+    assert not result["motion_supported"]
+    follower = observe(h, None)
+    assert all(not m["matches_koch_config"] for m in follower["motors"])
+
+
+def test_invalid_role_fails_before_any_bus_request():
+    h = Mock()
+    with pytest.raises(KeyError):
+        observe(h, None, role="guess")
+    h.ping.assert_not_called()

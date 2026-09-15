@@ -1,4 +1,4 @@
-"""Read-only Koch follower discovery and telemetry. This entry point cannot move motors."""
+"""Read-only Koch arm discovery and telemetry. This entry point cannot move motors."""
 
 import argparse
 import contextlib
@@ -20,8 +20,11 @@ JOINTS = (
     "wrist_roll",
     "gripper",
 )
-EXPECTED_MODELS = (1060, 1060, 1200, 1200, 1200, 1200)
-MODELS = {1060: "xl430-w250", 1200: "xl330-m288"}
+EXPECTED_MODELS = {
+    "follower": (1060, 1060, 1200, 1200, 1200, 1200),
+    "leader": (1190,) * 6,
+}
+MODELS = {1060: "xl430-w250", 1190: "xl330-m077", 1200: "xl330-m288"}
 # address, width, signed, scale, unit. Profile units depend on Drive_Mode.
 FIELDS = {
     "firmware": (6, 1, False, 1, "raw"),
@@ -100,8 +103,9 @@ def read_field(handler, port, motor_id, spec):
     }
 
 
-def observe(handler, port):
+def observe(handler, port, role="follower"):
     """Retain partial observations and faults. Missing data is never zero-filled."""
+    expected = EXPECTED_MODELS[role]
     start = time.monotonic()
     motors = []
     for motor_id, joint in enumerate(JOINTS, 1):
@@ -119,7 +123,7 @@ def observe(handler, port):
         if comm != 0 or error & 0x7F:
             continue
         record["model"] = MODELS.get(model)
-        record["matches_koch_config"] = model == EXPECTED_MODELS[motor_id - 1]
+        record["matches_koch_config"] = model == expected[motor_id - 1]
         if model not in MODELS:
             continue  # Do not apply an unverified control table to an unknown model.
         fields = dict(FIELDS)
@@ -147,6 +151,7 @@ def observe(handler, port):
         "protocol": 2.0,
         "baud": 1_000_000,
         "register_writes": 0,
+        "declared_role": role,
         "motion_supported": False,
         "calibration_applied": False,
         "motors": motors,
@@ -194,6 +199,7 @@ def main():
         "--list", action="store_true", help="List serial devices without opening them"
     )
     parser.add_argument("--port")
+    parser.add_argument("--role", choices=("follower", "leader"), default="follower")
     parser.add_argument(
         "--serial", help="Required USB serial identity for the confirmed follower"
     )
@@ -244,7 +250,7 @@ def main():
 
     motors = {
         name: (i, MODELS[model])
-        for i, (name, model) in enumerate(zip(JOINTS, EXPECTED_MODELS), 1)
+        for i, (name, model) in enumerate(zip(JOINTS, EXPECTED_MODELS[args.role]), 1)
     }
     bus = DynamixelMotorsBus(DynamixelMotorsBusConfig(port=args.port, motors=motors))
     # Same lock for cu/tty aliases and independent checkouts; scoped to the USB identity.
@@ -259,7 +265,7 @@ def main():
             bus.port_handler.writePort = readonly_writer(bus.port_handler.writePort)
             with contextlib.redirect_stdout(io.StringIO()):
                 bus.set_bus_baudrate(1_000_000)  # Changes host UART only.
-            result = observe(bus.packet_handler, bus.port_handler)
+            result = observe(bus.packet_handler, bus.port_handler, args.role)
             result.update(port=args.port, usb_serial=args.serial)
         finally:
             if bus.is_connected:
